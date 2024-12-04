@@ -6,6 +6,8 @@
 # @Author:      bubu
 # @Project:     douyinLiveWebFetcher
 
+import time
+import os
 import codecs
 import gzip
 import hashlib
@@ -17,6 +19,7 @@ import urllib.parse
 from contextlib import contextmanager
 from py_mini_racer import MiniRacer
 from unittest.mock import patch
+from logger import msgLogger, setGiftLoggerFilename, setChatLoggerFilename, chatLogger, giftLogger 
 
 import execjs
 import requests
@@ -24,6 +27,9 @@ import websocket
 
 from protobuf.douyin import *
 
+def generateDateTimeStr():
+    timestamp = time.time()
+    return time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime(timestamp))
 
 @contextmanager
 def patched_popen_encoding(encoding='utf-8'):
@@ -63,7 +69,7 @@ def generateSignature(wss, script_file='sign.js'):
         signature = ctx.call("get_sign", md5_param)
         return signature
     except Exception as e:
-        print(e)
+        msgLogger.error(e)
     
     # 以下代码对应js脚本为sign_v0.js
     # context = execjs.compile(script)
@@ -94,6 +100,18 @@ class DouyinLiveWebFetcher:
         :param live_id: 直播间的直播id，打开直播间web首页的链接如：https://live.douyin.com/261378947940，
                         其中的261378947940即是live_id
         """
+        #self.chatMsgFilename = f'chat_{generateDateTimeStr()}_file.txt'
+        dateTimeStr = generateDateTimeStr()
+        chatDir = "chat"
+        giftDir = "gift"
+        if not os.path.exists(chatDir) or not os.path.isdir(chatDir):
+            os.mkdir(chatDir)
+        if not os.path.exists(giftDir) or not os.path.isdir(giftDir):
+            os.mkdir(giftDir)
+        setChatLoggerFilename(f'{chatDir}/chat_{dateTimeStr}')
+        setGiftLoggerFilename(f'{giftDir}/gift_{dateTimeStr}')
+
+        #self.chatMsgFile = open(self.chatMsgFilename, 'a')
         self.__ttwid = None
         self.__room_id = None
         self.live_id = live_id
@@ -122,7 +140,7 @@ class DouyinLiveWebFetcher:
             response = requests.get(self.live_url, headers=headers)
             response.raise_for_status()
         except Exception as err:
-            print("【X】Request the live url error: ", err)
+            msgLogger.error("【X】Request the live url error: {}".format(err))
         else:
             self.__ttwid = response.cookies.get('ttwid')
             return self.__ttwid
@@ -144,11 +162,11 @@ class DouyinLiveWebFetcher:
             response = requests.get(url, headers=headers)
             response.raise_for_status()
         except Exception as err:
-            print("【X】Request the live room url error: ", err)
+            msgLogger.error("【X】Request the live room url error: {}".format(err))
         else:
             match = re.search(r'roomId\\":\\"(\d+)\\"', response.text)
             if match is None or len(match.groups()) < 1:
-                print("【X】No match found for roomId")
+                msgLogger.error("【X】No match found for roomId")
             
             self.__room_id = match.group(1)
             
@@ -192,12 +210,12 @@ class DouyinLiveWebFetcher:
         except Exception:
             self.stop()
             raise
-    
+
     def _wsOnOpen(self, ws):
         """
         连接建立成功
         """
-        print("WebSocket connected.")
+        msgLogger.info("WebSocket connected.")
     
     def _wsOnMessage(self, ws, message):
         """
@@ -225,25 +243,31 @@ class DouyinLiveWebFetcher:
                 {
                     'WebcastChatMessage': self._parseChatMsg,  # 聊天消息
                     'WebcastGiftMessage': self._parseGiftMsg,  # 礼物消息
-                    'WebcastLikeMessage': self._parseLikeMsg,  # 点赞消息
-                    'WebcastMemberMessage': self._parseMemberMsg,  # 进入直播间消息
+                    #'WebcastLikeMessage': self._parseLikeMsg,  # 点赞消息
+                    #'WebcastMemberMessage': self._parseMemberMsg,  # 进入直播间消息
                     'WebcastSocialMessage': self._parseSocialMsg,  # 关注消息
-                    'WebcastRoomUserSeqMessage': self._parseRoomUserSeqMsg,  # 直播间统计
+                    #'WebcastRoomUserSeqMessage': self._parseRoomUserSeqMsg,  # 直播间统计
                     'WebcastFansclubMessage': self._parseFansclubMsg,  # 粉丝团消息
                     'WebcastControlMessage': self._parseControlMsg,  # 直播间状态消息
-                    'WebcastEmojiChatMessage': self._parseEmojiChatMsg,  # 聊天表情包消息
-                    'WebcastRoomStatsMessage': self._parseRoomStatsMsg,  # 直播间统计信息
-                    'WebcastRoomMessage': self._parseRoomMsg,  # 直播间信息
-                    'WebcastRoomRankMessage': self._parseRankMsg,  # 直播间排行榜信息
+                    #'WebcastEmojiChatMessage': self._parseEmojiChatMsg,  # 聊天表情包消息
+                    #'WebcastRoomStatsMessage': self._parseRoomStatsMsg,  # 直播间统计信息
+                    #'WebcastRoomMessage': self._parseRoomMsg,  # 直播间信息
+                    #'WebcastRoomRankMessage': self._parseRankMsg,  # 直播间排行榜信息
                 }.get(method)(msg.payload)
             except Exception:
                 pass
     
     def _wsOnError(self, ws, error):
-        print("WebSocket error: ", error)
+        msgLogger.error("WebSocket error: {}".format(error))
+
+        #if not os.path.exists(self.chatMsgFilename):
+        #    return
+        #chatMsgFileSize = os.path.getsize(self.chatMsgFilename)
+        #if chatMsgFileSize == 0:
+        #    os.remove(self.chatMsgFilename)
     
     def _wsOnClose(self, ws, *args):
-        print("WebSocket connection closed.")
+        msgLogger.info("WebSocket connection closed.")
     
     def _parseChatMsg(self, payload):
         """聊天消息"""
@@ -251,7 +275,9 @@ class DouyinLiveWebFetcher:
         user_name = message.user.nick_name
         user_id = message.user.id
         content = message.content
-        print(f"【聊天msg】[{user_id}]{user_name}: {content}")
+        chatLogger.info(f"[{user_id}]{user_name}: {content}")
+        #self.chatMsgFile.write(f"[聊天msg] [{user_id}]{user_name}: {content}\n")
+        #self.chatMsgFile.flush()
     
     def _parseGiftMsg(self, payload):
         """礼物消息"""
@@ -259,14 +285,17 @@ class DouyinLiveWebFetcher:
         user_name = message.user.nick_name
         gift_name = message.gift.name
         gift_cnt = message.combo_count
-        print(f"【礼物msg】{user_name} 送出了 {gift_name}x{gift_cnt}")
+        giftLogger.info(f"{user_name} 送出了 {gift_name}x{gift_cnt}")
+        #self.chatMsgFile.write(f"[礼物msg] {user_name} 送出了 {gift_name}x{gift_cnt}\n")
+        #self.chatMsgFile.flush()
     
     def _parseLikeMsg(self, payload):
         '''点赞消息'''
         message = LikeMessage().parse(payload)
         user_name = message.user.nick_name
         count = message.count
-        print(f"【点赞msg】{user_name} 点了{count}个赞")
+        #self.chatMsgFile.write(f"[点赞msg] {user_name} 点了{count}个赞\n")
+        #self.chatMsgFile.flush()
     
     def _parseMemberMsg(self, payload):
         '''进入直播间消息'''
@@ -274,27 +303,31 @@ class DouyinLiveWebFetcher:
         user_name = message.user.nick_name
         user_id = message.user.id
         gender = ["女", "男"][message.user.gender]
-        print(f"【进场msg】[{user_id}][{gender}]{user_name} 进入了直播间")
+        #self.chatMsgFile.write(f"[进场msg] [{user_id}][{gender}]{user_name} 进入了直播间\n")
+        #self.chatMsgFile.flush()
     
     def _parseSocialMsg(self, payload):
         '''关注消息'''
         message = SocialMessage().parse(payload)
         user_name = message.user.nick_name
         user_id = message.user.id
-        print(f"【关注msg】[{user_id}]{user_name} 关注了主播")
+        #self.chatMsgFile.write(f"[关注msg] [{user_id}]{user_name} 关注了主播\n")
+        #self.chatMsgFile.flush()
     
     def _parseRoomUserSeqMsg(self, payload):
         '''直播间统计'''
         message = RoomUserSeqMessage().parse(payload)
         current = message.total
         total = message.total_pv_for_anchor
-        print(f"【统计msg】当前观看人数: {current}, 累计观看人数: {total}")
+        #self.chatMsgFile.write(f"[统计msg] 当前观看人数: {current}, 累计观看人数: {total}\n")
+        #self.chatMsgFile.flush()
     
     def _parseFansclubMsg(self, payload):
         '''粉丝团消息'''
         message = FansclubMessage().parse(payload)
         content = message.content
-        print(f"【粉丝团msg】 {content}")
+        #self.chatMsgFile.write(f"[粉丝团msg] {content}\n")
+        #self.chatMsgFile.flush()
     
     def _parseEmojiChatMsg(self, payload):
         '''聊天表情包消息'''
@@ -303,28 +336,32 @@ class DouyinLiveWebFetcher:
         user = message.user
         common = message.common
         default_content = message.default_content
-        print(f"【聊天表情包id】 {emoji_id},user：{user},common:{common},default_content:{default_content}")
+        #self.chatMsgFile.write(f"[聊天表情包id] {emoji_id},user：{user},common:{common},default_content:{default_content}\n")
+        #self.chatMsgFile.flush()
     
     def _parseRoomMsg(self, payload):
         message = RoomMessage().parse(payload)
         common = message.common
         room_id = common.room_id
-        print(f"【直播间msg】直播间id:{room_id}")
+        #self.chatMsgFile.write(f"[直播间msg] 直播间id:{room_id}\n")
+        #self.chatMsgFile.flush()
     
     def _parseRoomStatsMsg(self, payload):
         message = RoomStatsMessage().parse(payload)
         display_long = message.display_long
-        print(f"【直播间统计msg】{display_long}")
+        #self.chatMsgFile.write(f"[直播间统计msg] {display_long}\n")
+        #self.chatMsgFile.flush()
     
     def _parseRankMsg(self, payload):
         message = RoomRankMessage().parse(payload)
         ranks_list = message.ranks_list
-        print(f"【直播间排行榜msg】{ranks_list}")
+        #self.chatMsgFile.write(f"[直播间排行榜msg] {ranks_list}\n")
+        #self.chatMsgFile.flush()
     
     def _parseControlMsg(self, payload):
         '''直播间状态消息'''
         message = ControlMessage().parse(payload)
         
         if message.status == 3:
-            print("直播间已结束")
+            msgLogger.info("直播间已结束")
             self.stop()
