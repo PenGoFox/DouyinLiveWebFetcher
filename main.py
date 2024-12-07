@@ -12,7 +12,6 @@ from spider import get_douyin_stream_data
 import random
 
 from logger import msgLogger
-#msgLogger = logging.getmsgLogger("msgmsgLogger")
 
 if __name__ == '__main__':
     interval = 300
@@ -49,4 +48,4 @@ if __name__ == '__main__':
             msgLogger.info("手动退出")
             break
         except Exception as err:
-            logging.error(f"catch an error while run DouyinLiveWebFetcher: {err}")
+            msgLogger.error(f"catch an error while run DouyinLiveWebFetcher: {err}")
