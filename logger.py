@@ -41,7 +41,7 @@ def setGiftLoggerFilename(filename:str):
     if gift_file_handler:
         giftLogger.removeHandler(gift_file_handler)
 
-    file_handler = logging.FileHandler(filename)
+    file_handler = logging.FileHandler(filename, encoding="utf-8")
     file_handler.setLevel(logging.INFO)
     formatter = logging.Formatter("%(asctime)s %(message)s")
     file_handler.setFormatter(formatter )
@@ -60,7 +60,7 @@ def setChatLoggerFilename(filename:str):
     if chat_file_handler:
         chatLogger.removeHandler(chat_file_handler)
 
-    file_handler = logging.FileHandler(filename)
+    file_handler = logging.FileHandler(filename, encoding="utf-8")
     file_handler.setLevel(logging.INFO)
     formatter = logging.Formatter("%(asctime)s %(message)s")
     file_handler.setFormatter(formatter )
@@ -79,7 +79,7 @@ def setFansClubLoggerFilename(filename:str):
     if fansClub_file_handler:
         fansClubLogger.removeHandler(fansClub_file_handler)
 
-    file_handler = logging.FileHandler(filename)
+    file_handler = logging.FileHandler(filename, encoding="utf-8")
     file_handler.setLevel(logging.INFO)
     formatter = logging.Formatter("%(asctime)s %(message)s")
     file_handler.setFormatter(formatter )
