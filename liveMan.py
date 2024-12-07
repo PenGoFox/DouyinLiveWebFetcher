@@ -110,6 +110,7 @@ class DouyinLiveWebFetcher:
         setGiftLoggerFilename(dirStr)
         setFansClubLoggerFilename(dirStr)
 
+        self.giftTraceIdList = [] # 礼物 traceid 列表，用来去重
         self.__ttwid = None
         self.__room_id = None
         self.live_id = live_id
@@ -273,12 +274,18 @@ class DouyinLiveWebFetcher:
     def _parseGiftMsg(self, payload):
         """礼物消息"""
         message = GiftMessage().parse(payload)
+        trace_id = message.trace_id
+        if trace_id in self.giftTraceIdList: # 去重
+            return
+        self.giftTraceIdList.append(trace_id)
         user_name = message.user.nick_name
         user_id = message.user.id
         dyid = message.user.display_id # 抖音号
         gift_name = message.gift.name
         gift_cnt = message.combo_count
         giftLogger.info(f"[{user_id}] [{dyid}] \"{user_name}\" 送出了 \"{gift_name}\"x{gift_cnt}")
+        if len(self.giftTraceIdList) > 1000: # 太多了就删掉前面那一半
+            del self.giftTraceIdList[0:500]
     
     def _parseLikeMsg(self, payload):
         '''点赞消息'''
