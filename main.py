@@ -42,7 +42,7 @@ if __name__ == '__main__':
             DouyinLiveWebFetcher(live_id).start()
 
             msgLogger.info("直播弹幕已断开")
-            time.sleep(30)
+            time.sleep(10)
             checkBreak = 5
         except KeyboardInterrupt as err:
             msgLogger.info("手动退出")
