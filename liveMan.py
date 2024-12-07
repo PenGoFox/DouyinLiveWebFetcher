@@ -27,9 +27,11 @@ import websocket
 
 from protobuf.douyin import *
 
-def generateDateTimeStr():
-    timestamp = time.time()
-    return time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime(timestamp))
+def generateDateStr():
+    return time.strftime("%Y_%m_%d", time.localtime(time.time()))
+
+def generateTimeStr():
+    return time.strftime("%H_%M_%S", time.localtime(time.time()))
 
 @contextmanager
 def patched_popen_encoding(encoding='utf-8'):
@@ -101,19 +103,13 @@ class DouyinLiveWebFetcher:
                         其中的261378947940即是live_id
         """
         #self.chatMsgFilename = f'chat_{generateDateTimeStr()}_file.txt'
-        dateTimeStr = generateDateTimeStr()
-        chatDir = "chat"
-        giftDir = "gift"
-        fansDir = "fans"
-        if not os.path.exists(chatDir) or not os.path.isdir(chatDir):
-            os.mkdir(chatDir)
-        if not os.path.exists(giftDir) or not os.path.isdir(giftDir):
-            os.mkdir(giftDir)
-        if not os.path.exists(fansDir) or not os.path.isdir(fansDir):
-            os.mkdir(fansDir)
-        setChatLoggerFilename(f'{chatDir}/chat_{dateTimeStr}')
-        setGiftLoggerFilename(f'{giftDir}/gift_{dateTimeStr}')
-        setFansClubLoggerFilename(f'{fansDir}/fans_{dateTimeStr}')
+        dirStr = "Log_" + generateDateStr()
+        if not os.path.exists(dirStr) or not os.path.isdir(dirStr): # 创建名称类似 Log_2024_12_07 的目录
+            os.makedirs(dirStr)
+        dirStr += "/" + generateTimeStr()
+        setChatLoggerFilename(dirStr)
+        setGiftLoggerFilename(dirStr)
+        setFansClubLoggerFilename(dirStr)
 
         #self.chatMsgFile = open(self.chatMsgFilename, 'a')
         self.__ttwid = None

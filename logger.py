@@ -43,7 +43,7 @@ def setGiftLoggerFilename(filename:str):
 
     file_handler = logging.FileHandler(filename, encoding="utf-8")
     file_handler.setLevel(logging.INFO)
-    formatter = logging.Formatter("%(asctime)s %(message)s")
+    formatter = logging.Formatter("[gift] %(asctime)s %(message)s")
     file_handler.setFormatter(formatter )
 
     gift_file_handler = file_handler
@@ -62,7 +62,7 @@ def setChatLoggerFilename(filename:str):
 
     file_handler = logging.FileHandler(filename, encoding="utf-8")
     file_handler.setLevel(logging.INFO)
-    formatter = logging.Formatter("%(asctime)s %(message)s")
+    formatter = logging.Formatter("[chat] %(asctime)s %(message)s")
     file_handler.setFormatter(formatter )
 
     chat_file_handler = file_handler
@@ -81,7 +81,7 @@ def setFansClubLoggerFilename(filename:str):
 
     file_handler = logging.FileHandler(filename, encoding="utf-8")
     file_handler.setLevel(logging.INFO)
-    formatter = logging.Formatter("%(asctime)s %(message)s")
+    formatter = logging.Formatter("[fans] %(asctime)s %(message)s")
     file_handler.setFormatter(formatter )
 
     fansClub_file_handler = file_handler
