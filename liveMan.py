@@ -266,16 +266,19 @@ class DouyinLiveWebFetcher:
         message = ChatMessage().parse(payload)
         user_name = message.user.nick_name
         user_id = message.user.id
+        dyid = message.user.display_id # 抖音号
         content = message.content
-        chatLogger.info(f"[{user_id}]{user_name}: {content}")
+        chatLogger.info(f"[{user_id}] [{dyid}] {user_name}: {content}")
     
     def _parseGiftMsg(self, payload):
         """礼物消息"""
         message = GiftMessage().parse(payload)
         user_name = message.user.nick_name
+        user_id = message.user.id
+        dyid = message.user.display_id # 抖音号
         gift_name = message.gift.name
         gift_cnt = message.combo_count
-        giftLogger.info(f"{user_name} 送出了 {gift_name}x{gift_cnt}")
+        giftLogger.info(f"[{user_id}] [{dyid}] \"{user_name}\" 送出了 \"{gift_name}\"x{gift_cnt}")
     
     def _parseLikeMsg(self, payload):
         '''点赞消息'''
@@ -310,7 +313,9 @@ class DouyinLiveWebFetcher:
         '''粉丝团消息'''
         message = FansclubMessage().parse(payload)
         content = message.content
-        fansClubLogger.info(f"{content}")
+        user_id = message.user.id
+        dyid = message.user.display_id # 抖音号
+        fansClubLogger.info(f"[{user_id}] [{dyid}] {content}")
         #(f"[粉丝团msg] {content}\n")
     
     def _parseEmojiChatMsg(self, payload):
