@@ -26,6 +26,10 @@ giftLogger = logging.getLogger("giftLogger")
 giftLogger.setLevel(logging.INFO)
 gift_file_handler = None
 
+fansClubLogger = logging.getLogger("fansLogger")
+fansClubLogger.setLevel(logging.INFO)
+fansClub_file_handler = None
+
 def setGiftLoggerFilename(filename:str):
     global gift_file_handler
     global giftLogger
@@ -63,3 +67,22 @@ def setChatLoggerFilename(filename:str):
 
     chat_file_handler = file_handler
     chatLogger.addHandler(chat_file_handler)
+
+def setFansClubLoggerFilename(filename:str):
+    global fansClub_file_handler
+    global fansClubLogger
+
+    if len(filename) == 0:
+        filename = "fans"
+    filename += ".log"
+
+    if fansClub_file_handler:
+        fansClubLogger.removeHandler(fansClub_file_handler)
+
+    file_handler = logging.FileHandler(filename)
+    file_handler.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(asctime)s %(message)s")
+    file_handler.setFormatter(formatter )
+
+    fansClub_file_handler = file_handler
+    fansClubLogger.addHandler(fansClub_file_handler)

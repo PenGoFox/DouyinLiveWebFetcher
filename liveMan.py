@@ -19,7 +19,7 @@ import urllib.parse
 from contextlib import contextmanager
 from py_mini_racer import MiniRacer
 from unittest.mock import patch
-from logger import msgLogger, setGiftLoggerFilename, setChatLoggerFilename, chatLogger, giftLogger 
+from logger import msgLogger, setGiftLoggerFilename, setChatLoggerFilename, chatLogger, giftLogger, fansClubLogger, setFansClubLoggerFilename
 
 import execjs
 import requests
@@ -104,12 +104,16 @@ class DouyinLiveWebFetcher:
         dateTimeStr = generateDateTimeStr()
         chatDir = "chat"
         giftDir = "gift"
+        fansDir = "fans"
         if not os.path.exists(chatDir) or not os.path.isdir(chatDir):
             os.mkdir(chatDir)
         if not os.path.exists(giftDir) or not os.path.isdir(giftDir):
             os.mkdir(giftDir)
+        if not os.path.exists(fansDir) or not os.path.isdir(fansDir):
+            os.mkdir(fansDir)
         setChatLoggerFilename(f'{chatDir}/chat_{dateTimeStr}')
         setGiftLoggerFilename(f'{giftDir}/gift_{dateTimeStr}')
+        setFansClubLoggerFilename(f'{fansDir}/fans_{dateTimeStr}')
 
         #self.chatMsgFile = open(self.chatMsgFilename, 'a')
         self.__ttwid = None
@@ -294,6 +298,7 @@ class DouyinLiveWebFetcher:
         message = LikeMessage().parse(payload)
         user_name = message.user.nick_name
         count = message.count
+        chatLogger.info(f"[点赞msg] {user_name} 点了{count}个赞\n")
         #self.chatMsgFile.write(f"[点赞msg] {user_name} 点了{count}个赞\n")
         #self.chatMsgFile.flush()
     
@@ -326,6 +331,7 @@ class DouyinLiveWebFetcher:
         '''粉丝团消息'''
         message = FansclubMessage().parse(payload)
         content = message.content
+        fansClubLogger.info(f"{content}")
         #self.chatMsgFile.write(f"[粉丝团msg] {content}\n")
         #self.chatMsgFile.flush()
     
