@@ -10,3 +10,4 @@ package-lock.json
 *.log
 Danmu/
 Logs/
+version.py
