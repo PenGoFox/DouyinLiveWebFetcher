@@ -9,3 +9,4 @@ package-lock.json
 *.pyc
 *.log
 Danmu/
+Logs/

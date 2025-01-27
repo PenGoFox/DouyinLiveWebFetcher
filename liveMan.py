@@ -105,10 +105,10 @@ class DouyinLiveWebFetcher:
         """
         dateStr = generateDateStr()
         timeStr = generateTimeStr()
-        dirStr = "Log_" + dateStr
-        if not os.path.exists(dirStr) or not os.path.isdir(dirStr): # 创建名称类似 Log_2024_12_07 的目录
+        dirStr = f"Logs/{live_id}/"
+        if not os.path.exists(dirStr) or not os.path.isdir(dirStr): # 创建名称类似 Log/直播id/ 的目录
             os.makedirs(dirStr)
-        dirStr += "/" + timeStr
+        dirStr += f"{dateStr} {timeStr}"
         setChatLoggerFilename(dirStr)
         setGiftLoggerFilename(dirStr)
         setFansClubLoggerFilename(dirStr)
