@@ -20,6 +20,7 @@ from contextlib import contextmanager
 from py_mini_racer import MiniRacer
 from unittest.mock import patch
 from logger import msgLogger, setGiftLoggerFilename, setChatLoggerFilename, chatLogger, giftLogger, fansClubLogger, setFansClubLoggerFilename
+from DanmuXmlWriter import DanmuXmlWriter
 
 import execjs
 import requests
@@ -102,13 +103,28 @@ class DouyinLiveWebFetcher:
         :param live_id: 直播间的直播id，打开直播间web首页的链接如：https://live.douyin.com/261378947940，
                         其中的261378947940即是live_id
         """
-        dirStr = "Log_" + generateDateStr()
+        dateStr = generateDateStr()
+        timeStr = generateTimeStr()
+        dirStr = "Log_" + dateStr
         if not os.path.exists(dirStr) or not os.path.isdir(dirStr): # 创建名称类似 Log_2024_12_07 的目录
             os.makedirs(dirStr)
-        dirStr += "/" + generateTimeStr()
+        dirStr += "/" + timeStr
         setChatLoggerFilename(dirStr)
         setGiftLoggerFilename(dirStr)
         setFansClubLoggerFilename(dirStr)
+
+        roomid = live_id
+        name = "default"
+        title = "default"
+        areaNameParent = "default"
+        areaNameChild = "default"
+
+        xmlDirStr = f"Danmu/{live_id}/"
+        if not os.path.exists(xmlDirStr) or not os.path.isdir(xmlDirStr):
+            os.makedirs(xmlDirStr)
+        dateTimeStr = f"{dateStr} {timeStr}"
+        xmlFilename = xmlDirStr + dateTimeStr + ".xml"
+        self.xmlWriter = DanmuXmlWriter(xmlFilename, roomid, name, title, areaNameParent, areaNameChild, dateTimeStr)
 
         self.giftTraceIdList = [] # 礼物 traceid 列表，用来去重
         self.__ttwid = None
@@ -268,8 +284,10 @@ class DouyinLiveWebFetcher:
         user_name = message.user.nick_name
         user_id = message.user.id
         dyid = message.user.display_id # 抖音号
+        sec_uid = message.user.sec_uid # 可用于直接拼接用户空间的 url
         content = message.content
         chatLogger.info(f"[{user_id}] [{dyid}] {user_name}: {content}")
+        self.xmlWriter.appendDanmu(user_name, dyid, sec_uid, content)
     
     def _parseGiftMsg(self, payload):
         """礼物消息"""
@@ -281,9 +299,11 @@ class DouyinLiveWebFetcher:
         user_name = message.user.nick_name
         user_id = message.user.id
         dyid = message.user.display_id # 抖音号
+        sec_uid = message.user.sec_uid # 可用于直接拼接用户空间的 url
         gift_name = message.gift.name
         gift_cnt = message.combo_count
         giftLogger.info(f"[{user_id}] [{dyid}] \"{user_name}\" 送出了 \"{gift_name}\"x{gift_cnt}")
+        self.xmlWriter.appendGift(user_name, dyid, sec_uid, gift_name, gift_cnt)
         if len(self.giftTraceIdList) > 1000: # 太多了就删掉前面那一半
             del self.giftTraceIdList[0:500]
     
