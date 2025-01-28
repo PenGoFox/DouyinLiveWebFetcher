@@ -1,6 +1,7 @@
 import header
 import version
 import time
+from xml.sax.saxutils import escape
 
 class DanmuXmlWriter:
     def __init__(self, filename, roomid, name, title, areaNameParent, areaNameChild, startTime):
@@ -9,6 +10,18 @@ class DanmuXmlWriter:
         self._endStr = "</i>\n"
 
         self._initWithHeader(roomid, name, title, areaNameParent, areaNameChild, startTime)
+
+        # 定义要转义的符号和对应的 XML 实体
+        self._escapeEntities = {
+            "&": "&amp;",   # 转义 & 符号
+            "<": "&lt;",    # 转义 < 符号
+            ">": "&gt;",    # 转义 > 符号
+            "\"": "&quot;", # 转义 " 符号
+            "'": "&apos;"   # 转义 ' 符号
+        }
+
+    def _escape(self, content):
+        return escape(content, entities=self._escapeEntities)
 
     def _initWithHeader(self, roomid, name, title, areaNameParent, areaNameChild, startTime):
         self._startTime = time.time()
@@ -22,7 +35,7 @@ class DanmuXmlWriter:
     def appendTag(self, tag_name, attributes, text=None):
         attrStr = ""
         for key in attributes:
-            attrStr += f'{key}="{attributes[key]}" '
+            attrStr += f'{key}="{self._escape(attributes[key])}" '
 
         with open(self._filename, "rb+") as f:
             f.seek(-len(self._endStr) - 1, 2)
@@ -30,7 +43,7 @@ class DanmuXmlWriter:
             if text is None:
                 toWrite = f"<{tag_name} {attrStr} />\n\n{self._endStr}"
             else:
-                toWrite = f"<{tag_name} {attrStr}>{text}</{tag_name}>\n\n{self._endStr}"
+                toWrite = f"<{tag_name} {attrStr}>{self._escape(text)}</{tag_name}>\n\n{self._endStr}"
             f.write(toWrite.encode("utf-8"))
 
     def appendDanmu(self, user, uid, sec_id, text):
