@@ -10,12 +10,23 @@ from liveMan import DouyinLiveWebFetcher
 import time
 from spider import get_douyin_stream_data
 import random
+from configRead import *
 
 from logger import msgLogger
 
+configFilename = "config.json"
+
 if __name__ == '__main__':
     interval = 300
-    live_id = '326624872646' # 测试
+
+    if not loadConfig(configFilename):
+        msgLogger.error("读取配置文件 {} 失败".format(configFilename))
+        exit(-1)
+    config = getConfig()
+    live_id = config["liveid"]
+    anchor_name = config["anchorname"]
+    msgLogger.info("直播间id: {}".format(live_id))
+    msgLogger.info("主播名: {}".format(anchor_name ))
     live_url = "https://live.douyin.com/"
 
     checkBreak = 0

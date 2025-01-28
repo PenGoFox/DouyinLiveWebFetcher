@@ -98,6 +98,8 @@ def generateMsToken(length=107):
 class DouyinLiveWebFetcher:
     
     def __init__(self, live_id):
+        from configRead import getConfig
+
         """
         直播间弹幕抓取对象
         :param live_id: 直播间的直播id，打开直播间web首页的链接如：https://live.douyin.com/261378947940，
@@ -119,7 +121,9 @@ class DouyinLiveWebFetcher:
         areaNameParent = "default"
         areaNameChild = "default"
 
-        xmlDirStr = f"Danmu/{live_id}/"
+        config = getConfig()
+        anchor_name = config["anchorname"]
+        xmlDirStr = f"Danmu/{live_id}-{anchor_name}/"
         if not os.path.exists(xmlDirStr) or not os.path.isdir(xmlDirStr):
             os.makedirs(xmlDirStr)
         dateTimeStr = f"{dateStr} {timeStr}"
