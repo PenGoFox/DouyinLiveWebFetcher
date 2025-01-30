@@ -307,7 +307,7 @@ class DouyinLiveWebFetcher:
         gift_name = message.gift.name
         gift_cnt = message.combo_count
         giftLogger.info(f"[{user_id}] [{dyid}] \"{user_name}\" 送出了 \"{gift_name}\"x{gift_cnt}")
-        self.xmlWriter.appendGift(user_name, dyid, sec_uid, gift_name, gift_cnt)
+        self.xmlWriter.appendGift(user_name, dyid, sec_uid, gift_name, str(gift_cnt))
         if len(self.giftTraceIdList) > 1000: # 太多了就删掉前面那一半
             del self.giftTraceIdList[0:500]
     
