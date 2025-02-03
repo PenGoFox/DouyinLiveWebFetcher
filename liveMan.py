@@ -130,7 +130,10 @@ class DouyinLiveWebFetcher:
         xmlFilename = xmlDirStr + dateTimeStr + ".xml"
         self.xmlWriter = DanmuXmlWriter(xmlFilename, roomid, name, title, areaNameParent, areaNameChild, dateTimeStr)
 
-        self.giftTraceIdList = [] # 礼物 traceid 列表，用来去重
+        self.giftTraceDict = dict() # 礼物跟踪列表，用来去重
+        self.giftTraceDictCleanDeltaT = config["gift_clean_delta_t"] if "gift_clean_delta_t" in config else 10 # 清除礼物数据的时间间隔，默认为 10 秒
+        self.giftTraceDictLastCleanTimestamp = time.time() # 上次清除旧礼物数据的时间戳
+
         self.__ttwid = None
         self.__room_id = None
         self.live_id = live_id
@@ -296,21 +299,57 @@ class DouyinLiveWebFetcher:
     def _parseGiftMsg(self, payload):
         """礼物消息"""
         message = GiftMessage().parse(payload)
-        trace_id = message.trace_id
-        if trace_id in self.giftTraceIdList: # 去重
-            return
-        self.giftTraceIdList.append(trace_id)
+
         user_name = message.user.nick_name
         user_id = message.user.id
         dyid = message.user.display_id # 抖音号
         sec_uid = message.user.sec_uid # 可用于直接拼接用户空间的 url
+
         gift_name = message.gift.name
         gift_cnt = message.combo_count
-        giftLogger.info(f"[{user_id}] [{dyid}] \"{user_name}\" 送出了 \"{gift_name}\"x{gift_cnt}")
-        self.xmlWriter.appendGift(user_name, dyid, sec_uid, gift_name, str(gift_cnt))
-        if len(self.giftTraceIdList) > 1000: # 太多了就删掉前面那一半
-            del self.giftTraceIdList[0:500]
-    
+
+        repeat_count = message.repeat_count # 送礼重复次数，理论上这玩意儿大于 0
+        repeat_end = message.repeat_end # 重复送礼是否已经结束
+
+        timestamp = time.time()
+        traceKey = (dyid, gift_name) # 要跟踪的 key
+        traceVal = (timestamp, repeat_count) # 将要记录的 value
+        if 1 == repeat_end: # 重复送礼物已经结束，从字典删除即可
+            msgLogger.debug(f"delete key: {traceKey}")
+            del self.giftTraceDict[traceKey]
+        elif 1 == repeat_count: # 第一次送礼物必须要写出，猜测重复送礼物不一定会有这条
+            self.giftTraceDict[traceKey] = traceVal
+
+            # 写信息
+            giftLogger.info(f"[{user_id}] [{dyid}] \"{user_name}\" 送出了 \"{gift_name}\"x1")
+            self.xmlWriter.appendGift(user_name, dyid, sec_uid, gift_name, str(1))
+            msgLogger.debug(f"{traceKey}{traceVal} [{user_id}] [{dyid}] \"{user_name}\" 送出了 \"{gift_name}\"x1")
+        else:
+            count = 0
+            if traceKey not in self.giftTraceDict: # 不一定之前有记录
+                count = repeat_count
+            else:
+                lastValue = self.giftTraceDict[traceKey]
+                count = repeat_count - lastValue[1] # 相比上一次重复送礼多送了多少礼物
+            self.giftTraceDict[traceKey] = traceVal # 更新一下这个礼物记录
+
+            # 写信息
+            giftLogger.info(f"[{user_id}] [{dyid}] \"{user_name}\" 送出了 \"{gift_name}\"x{count}")
+            self.xmlWriter.appendGift(user_name, dyid, sec_uid, gift_name, str(count))
+            msgLogger.debug(f"{traceKey}{traceVal} [{user_id}] [{dyid}] \"{user_name}\" 送出了 \"{gift_name}\"x{count}")
+
+        # 删掉一定时间之前的所有记录
+        deltaT = timestamp - self.giftTraceDictLastCleanTimestamp
+        if deltaT > self.giftTraceDictCleanDeltaT:
+            newDict = dict()
+            for key, val in self.giftTraceDict.items(): # 获取还要用的记录
+                # 在上次记录时间之后的或者有重复送礼物但还没送完的就继续用
+                if val[0] >= self.giftTraceDictLastCleanTimestamp or val[1] > 1:
+                    newDict[key] = val
+            self.giftTraceDict = newDict # 更新为新的记录表
+            msgLogger.debug(f"clean before {self.giftTraceDictLastCleanTimestamp}")
+            self.giftTraceDictLastCleanTimestamp = timestamp # 更新时间戳
+
     def _parseLikeMsg(self, payload):
         '''点赞消息'''
         message = LikeMessage().parse(payload)
