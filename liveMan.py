@@ -115,12 +115,6 @@ class DouyinLiveWebFetcher:
         setGiftLoggerFilename(dirStr)
         setFansClubLoggerFilename(dirStr)
 
-        roomid = live_id
-        name = "default"
-        title = "default"
-        areaNameParent = "default"
-        areaNameChild = "default"
-
         config = getConfig()
         anchor_name = config["anchorname"]
         xmlDirStr = f"Danmu/{live_id}-{anchor_name}/"
@@ -128,7 +122,10 @@ class DouyinLiveWebFetcher:
             os.makedirs(xmlDirStr)
         dateTimeStr = f"{dateStr} {timeStr}"
         xmlFilename = xmlDirStr + dateTimeStr + ".xml"
-        self.xmlWriter = DanmuXmlWriter(xmlFilename, roomid, name, title, areaNameParent, areaNameChild, dateTimeStr)
+        title = "default"
+        areaNameParent = "default"
+        areaNameChild = "default"
+        self.xmlWriter = DanmuXmlWriter(xmlFilename, live_id, anchor_name, title, areaNameParent, areaNameChild, dateTimeStr)
 
         self.giftTraceDict = dict() # 礼物跟踪列表，用来去重
         self.giftTraceDictCleanDeltaT = config["gift_clean_delta_t"] if "gift_clean_delta_t" in config else 10 # 清除礼物数据的时间间隔，默认为 10 秒
