@@ -312,8 +312,13 @@ class DouyinLiveWebFetcher:
         traceKey = (dyid, gift_name) # 要跟踪的 key
         traceVal = (timestamp, repeat_count) # 将要记录的 value
         if 1 == repeat_end: # 重复送礼物已经结束，从字典删除即可
-            msgLogger.debug(f"delete key: {traceKey}")
-            del self.giftTraceDict[traceKey]
+            if traceKey not in self.giftTraceDict: # 有可能刚打开服务就遇到了一条结束信息
+                giftLogger.info(f"[{user_id}] [{dyid}] \"{user_name}\" 送出了 \"{gift_name}\"x{repeat_count}")
+                self.xmlWriter.appendGift(user_name, dyid, sec_uid, gift_name, str(repeat_count))
+                msgLogger.debug(f"{traceKey}{traceVal} [{user_id}] [{dyid}] \"{user_name}\" 送出了 \"{gift_name}\"x{repeat_count}")
+            else:
+                msgLogger.debug(f"delete key: {traceKey}")
+                del self.giftTraceDict[traceKey]
         elif 1 == repeat_count: # 第一次送礼物必须要写出，猜测重复送礼物不一定会有这条
             self.giftTraceDict[traceKey] = traceVal
 
