@@ -15,6 +15,8 @@ import random
 import re
 import string
 import subprocess
+import threading
+import time
 import urllib.parse
 from contextlib import contextmanager
 from py_mini_racer import MiniRacer
@@ -131,6 +133,13 @@ class DouyinLiveWebFetcher:
         self.giftTraceDictCleanDeltaT = config["gift_clean_delta_t"] if "gift_clean_delta_t" in config else 10 # 清除礼物数据的时间间隔，默认为 10 秒
         self.giftTraceDictLastCleanTimestamp = time.time() # 上次清除旧礼物数据的时间戳
 
+        # 心跳包延迟时间
+        self.__heartbeat_delay = 60
+        if "heartbeatDelay" in config:
+            self.__heartbeat_delay = config["heartbeatDelay"]
+            if self.__heartbeat_delay < 10:
+                self.__heartbeat_delay = 10
+
         self.__ttwid = None
         self.__room_id = None
         self.live_id = live_id
@@ -230,11 +239,27 @@ class DouyinLiveWebFetcher:
             self.stop()
             raise
 
+    def _sendHeartbeat(self):
+        """
+        发送心跳包
+        """
+        while True:
+            try:
+                heartbeat = PushFrame(payload_type='hb').SerializeToString()
+                self.ws.send(heartbeat, websocket.ABNF.OPCODE_PING)
+                msgLogger.info("send heartbeat")
+            except Exception as e:
+                msgLogger.error("send heartbeat failed")
+                break
+            else:
+                time.sleep(self.__heartbeat_delay)
+
     def _wsOnOpen(self, ws):
         """
         连接建立成功
         """
         msgLogger.info("WebSocket connected.")
+        threading.Thread(target=self._sendHeartbeat).start()
     
     def _wsOnMessage(self, ws, message):
         """
