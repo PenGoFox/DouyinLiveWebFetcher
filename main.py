@@ -30,6 +30,7 @@ if __name__ == '__main__':
     live_url = "https://live.douyin.com/"
 
     checkBreak = 0
+    live = None
 
     while True:
         try:
@@ -50,13 +51,20 @@ if __name__ == '__main__':
                 continue
             msgLogger.info(f"直播已打开，连接弹幕")
 
-            DouyinLiveWebFetcher(live_id).start()
+            live = DouyinLiveWebFetcher(live_id)
+            live.start()
+            live.stop()
+            live = None
 
             msgLogger.info("直播弹幕已断开")
             time.sleep(2)
             checkBreak = 5
         except KeyboardInterrupt as err:
             msgLogger.info("手动退出")
+            if live is not None:
+                live.stop()
             break
         except Exception as err:
             msgLogger.error(f"catch an error while run DouyinLiveWebFetcher: {err}")
+            if live is not None:
+                live.stop()

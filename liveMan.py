@@ -139,6 +139,7 @@ class DouyinLiveWebFetcher:
             self.__heartbeat_delay = config["heartbeatDelay"]
             if self.__heartbeat_delay < 10:
                 self.__heartbeat_delay = 10
+        self.__stop_send_heartbeat_event = threading.Event() # 停止发送心跳包事件，用于提前停止心跳包线程
 
         self.__ttwid = None
         self.__room_id = None
@@ -151,6 +152,7 @@ class DouyinLiveWebFetcher:
         self._connectWebSocket()
     
     def stop(self):
+        self.__stop_send_heartbeat_event.set() # 停止线程
         self.ws.close()
     
     @property
@@ -245,14 +247,18 @@ class DouyinLiveWebFetcher:
         """
         while True:
             try:
+                stop_send = self.__stop_send_heartbeat_event.wait(timeout=self.__heartbeat_delay)
+                if stop_send:
+                    msgLogger.debug("stop send heartbeat event!")
+                    break
+
                 heartbeat = PushFrame(payload_type='hb').SerializeToString()
                 self.ws.send(heartbeat, websocket.ABNF.OPCODE_PING)
                 msgLogger.info("send heartbeat")
             except Exception as e:
                 msgLogger.error("send heartbeat failed")
                 break
-            else:
-                time.sleep(self.__heartbeat_delay)
+        msgLogger.info("stop send heartbeat")
 
     def _wsOnOpen(self, ws):
         """
@@ -298,6 +304,10 @@ class DouyinLiveWebFetcher:
                     #'WebcastRoomMessage': self._parseRoomMsg,  # 直播间信息
                     #'WebcastRoomRankMessage': self._parseRankMsg,  # 直播间排行榜信息
                 }.get(method)(msg.payload)
+            except KeyboardInterrupt as err:
+                msgLogger.info("kb itrrupt")
+                self.stop()
+                raise
             except Exception:
                 pass
     
