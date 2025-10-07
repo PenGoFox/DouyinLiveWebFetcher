@@ -11,6 +11,8 @@ import time
 from spider import get_douyin_stream_data
 import random
 from configRead import *
+from web import Web
+import Global
 
 from logger import msgLogger
 
@@ -29,6 +31,14 @@ if __name__ == '__main__':
     msgLogger.info("主播名: {}".format(anchor_name ))
     live_url = "https://live.douyin.com/"
 
+    # 尝试启动 web 服务
+    if "web" in config:
+        web = config["web"]
+        if "enable" in web and web["enable"]:
+            host = web["host"]
+            port = web["port"]
+            Web(host, port).runInThread()
+
     checkBreak = 0
     live = None
 
@@ -46,14 +56,19 @@ if __name__ == '__main__':
                     checkBreak -= 1
                     _interval = 30
 
+                Global.isLiveStreaming = False
                 msgLogger.info(f"直播未打开，等待{_interval}秒")
                 time.sleep(_interval)
                 continue
             msgLogger.info(f"直播已打开，连接弹幕")
 
+            Global.isLiveStreaming = True
+
             live = DouyinLiveWebFetcher(live_id)
+            Global.isRecording = True
             live.start()
             live.stop()
+            Global.isRecording = False
             live = None
 
             msgLogger.info("直播弹幕已断开")
@@ -61,10 +76,12 @@ if __name__ == '__main__':
             checkBreak = 5
         except KeyboardInterrupt as err:
             msgLogger.info("手动退出")
+            Global.isRecording = False
             if live is not None:
                 live.stop()
             break
         except Exception as err:
             msgLogger.error(f"catch an error while run DouyinLiveWebFetcher: {err}")
+            Global.isRecording = False
             if live is not None:
                 live.stop()

@@ -2,5 +2,10 @@
     "liveid": "",
     "anchorname": "主播名",
     "gift_clean_delta_t": 10,
-    "heartbeatDelay": 60
+    "heartbeatDelay": 60,
+    "web": {
+        "enable": true,
+        "host": "localhost",
+        "port": 6356
+    }
 }
